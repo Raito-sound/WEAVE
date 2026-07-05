@@ -927,15 +927,23 @@ async function openFile(rel,force){
     if(!S.dirty)ed.focus();
   }catch(e){toast('文書を開けませんでした',true);console.error(e)}
 }
-function setStat(msg,cls){const s=$('#savestat');s.textContent=msg;s.className=cls||''}
-ed.addEventListener('input',()=>{
+let _stat='';
+function setStat(msg,cls){const k=msg+'|'+(cls||'');if(k===_stat)return;_stat=k;const s=$('#savestat');s.textContent=msg;s.className=cls||''}
+let composing=false,cntTimer=null,twRaf=0;
+function scheduleCounts(){clearTimeout(cntTimer);cntTimer=setTimeout(updateCounts,150)}
+function twCenterSoon(){if(!twRaf)twRaf=requestAnimationFrame(()=>{twRaf=0;twCenter()})}
+function onEdInput(e){
   if(!S.cur)return;
   S.dirty=true;setStat('未保存…');
+  if(composing||(e&&e.isComposing))return; // IME変換中は確定まで解析しない
   clearTimeout(S.saveTimer);
   S.saveTimer=setTimeout(saveNow,2500);
-  updateCounts();
-  acCheck();twCenter();
-});
+  scheduleCounts();
+  acCheck();twCenterSoon();
+}
+ed.addEventListener('input',onEdInput);
+ed.addEventListener('compositionstart',()=>{composing=true;clearTimeout(S.saveTimer)});
+ed.addEventListener('compositionend',()=>{composing=false;onEdInput()});
 /* ---- images ---- */
 const isImg=n=>/\.(png|jpe?g|gif|webp)$/i.test(n);
 const imgCache={};
@@ -1444,7 +1452,7 @@ ed.addEventListener('keydown',e=>{
     if(s===en)ed.setSelectionRange(s+2,s+2);
     ed.dispatchEvent(new Event('input'))
   }});
-ed.addEventListener('keyup',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Enter'].includes(e.key))twCenter()});
+ed.addEventListener('keyup',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Enter'].includes(e.key))twCenterSoon()});
 ed.addEventListener('blur',()=>setTimeout(acHide,150));
 
 /* ---- 最近の文書 ---- */
