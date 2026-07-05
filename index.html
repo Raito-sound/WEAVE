@@ -560,50 +560,65 @@ async function refreshTree(){
   S.nodes=root;
   renderTree();
 }
+const selfOf=n=>n.dir?n.children.find(k=>!k.dir&&noExt(k.name)===n.name):null;
 function orderedChildren(node){
   const ord=S.meta.order[node.rel]||[];
   const key=n=>{const i=ord.indexOf(n.name);return i<0?9999:i};
-  const dirs=node.children.filter(c=>c.dir).sort((a,b)=>key(a)-key(b)||jaSort(a.name,b.name));
-  const files=node.children.filter(c=>!c.dir).sort((a,b)=>key(a)-key(b)||jaSort(a.name,b.name));
-  return dirs.concat(files);
+  return node.children.slice().sort((a,b)=>key(a)-key(b)||jaSort(a.name,b.name));
 }
 function renderTree(){
   const tree=$('#tree');tree.innerHTML='';
   const open=LS.get('weave.open.'+S.project,{});
-  const build=(node,box)=>{
+  const build=(node,box,skip)=>{
     for(const c of orderedChildren(node)){
+      if(c===skip)continue;
       const wrap=document.createElement('div');wrap.className='node';
-      const row=document.createElement('div');row.className='row-item';row.draggable=true;row.dataset.rel=c.rel;row.dataset.dir=c.dir?'1':'';
+      const row=document.createElement('div');row.className='row-item';row.draggable=true;row.dataset.rel=c.rel;
       const isOpen=open[c.rel]!==false;
+      const self=selfOf(c);
       let inner='';
-      if(c.dir){inner+='<span class="ic">'+(isOpen?'▾':'▸')+'</span><span class="nm">'+esc(c.name)+'</span>';}
-      else{
+      if(self){ // 親文書(子文書がぶら下がる文書)
+        const st=(S.meta.docs[self.rel]||{}).status;
+        const hasKids=c.children.length>1;
+        inner='<span class="ic tg">'+(hasKids?(isOpen?'▾':'▸'):'·')+'</span>'+(st?'<span class="st st-'+st+'"></span>':'')+'<span class="nm">'+esc(c.name)+'</span>';
+        inner+='<span class="acts"><button data-a="nf" title="子文書を追加">＋</button><button data-a="rn" title="名前を変更">✎</button><button data-a="del" title="削除">✕</button></span>';
+      }else if(c.dir){ // 通常フォルダ
+        inner='<span class="ic tg">'+(isOpen?'▾':'▸')+'</span><span class="nm">'+esc(c.name)+'</span>';
+        inner+='<span class="acts"><button data-a="nf" title="文書を追加">＋</button><button data-a="nd" title="サブフォルダを追加">⊞</button><button data-a="rn" title="名前を変更">✎</button><button data-a="del" title="削除">✕</button></span>';
+      }else{ // 文書
         const st=(S.meta.docs[c.rel]||{}).status;
-        inner+='<span class="ic">·</span>'+(st?'<span class="st st-'+st+'"></span>':'')+'<span class="nm">'+esc(noExt(c.name))+'</span>';
+        const canChild=/\.(md|txt)$/i.test(c.name);
+        inner='<span class="ic">·</span>'+(st?'<span class="st st-'+st+'"></span>':'')+'<span class="nm">'+esc(noExt(c.name))+'</span>';
+        inner+='<span class="acts">'+(canChild?'<button data-a="nc" title="子文書をぶら下げる">＋</button>':'')+'<button data-a="rn" title="名前を変更">✎</button><button data-a="del" title="削除">✕</button></span>';
       }
-      inner+='<span class="acts">'+(c.dir?'<button data-a="nf" title="文書を追加">＋</button><button data-a="nd" title="サブフォルダを追加">⊞</button>':'')+'<button data-a="rn" title="名前を変更">✎</button><button data-a="del" title="削除">✕</button></span>';
       row.innerHTML=inner;
-      if(S.cur&&S.cur.rel===c.rel)row.classList.add('active');
+      const activeRel=self?self.rel:c.rel;
+      if(S.cur&&S.cur.rel===activeRel)row.classList.add('active');
       row.onclick=ev=>{
         const a=ev.target.dataset.a;
         if(a==='rn'){renameEntry(c);return}
         if(a==='del'){deleteEntry(c);return}
         if(a==='nf'){newFile(c.rel);return}
         if(a==='nd'){newFolder(c.rel);return}
-        if(c.dir){open[c.rel]=!(open[c.rel]!==false);LS.set('weave.open.'+S.project,open);renderTree()}
+        if(a==='nc'){addChildDoc(c);return}
+        if(self){
+          if(ev.target.classList.contains('tg')){open[c.rel]=!(open[c.rel]!==false);LS.set('weave.open.'+S.project,open);renderTree()}
+          else openFile(self.rel);
+        }
+        else if(c.dir){open[c.rel]=!(open[c.rel]!==false);LS.set('weave.open.'+S.project,open);renderTree()}
         else if(isImg(c.name))viewImage(c.rel);
         else openFile(c.rel);
       };
       bindDnD(row,c);
       wrap.appendChild(row);
-      if(c.dir&&isOpen){
+      if(c.dir&&isOpen&&c.children.length>(self?1:0)){
         const kids=document.createElement('div');kids.className='kids';
-        build(c,kids);wrap.appendChild(kids);
+        build(c,kids,self);wrap.appendChild(kids);
       }
       box.appendChild(wrap);
     }
   };
-  build(S.nodes,tree);
+  build(S.nodes,tree,null);
 }
 function findNode(rel,node){
   node=node||S.nodes;
@@ -647,12 +662,41 @@ function bindDnD(row,node){
     dragRel=null;
   });
 }
+async function addChildDoc(node){
+  // 通常の文書を「親文書」(同名フォルダ+本体)に変換して子を追加
+  try{
+    if(S.cur&&S.cur.rel===node.rel&&S.dirty)await saveNow();
+    const parent=parentOf(node.rel);
+    const base=noExt(node.name);
+    const folderRel=parent+'/'+base;
+    try{await FS.mkdir(abs(folderRel))}catch(e){}
+    await FS.move(abs(node.rel),abs(folderRel+'/'+node.name));
+    remapMeta(node.rel,folderRel+'/'+node.name,false);
+    const ord=S.meta.order[parent];
+    if(ord){const i=ord.indexOf(node.name);if(i>=0)ord[i]=base}
+    if(S.cur&&S.cur.rel===node.rel){
+      S.cur.rel=folderRel+'/'+node.name;
+      await refreshRev();
+    }
+    saveMetaSoon();
+    await refreshTree();
+    newFile(folderRel);
+  }catch(e){toast('子文書の追加に失敗しました',true);console.error(e)}
+}
+async function refreshRev(){
+  if(!S.cur)return;
+  try{
+    const md=await rpc('files/get_metadata',{path:abs(S.cur.rel)});
+    S.cur.rev=md.rev;S.cur.modified=md.server_modified;updateCounts();
+  }catch(e){}
+}
 async function moveEntry(src,toRel,silent){
   await FS.move(abs(src.rel),abs(toRel));
   remapMeta(src.rel,toRel,src.dir);
   if(S.cur&&(S.cur.rel===src.rel||S.cur.rel.startsWith(src.rel+'/'))){
     S.cur.rel=toRel+S.cur.rel.slice(src.rel.length);
     $('#fname').textContent=noExt(baseName(S.cur.rel));
+    await refreshRev();
   }
   await refreshTree();
   saveMetaSoon();
@@ -706,14 +750,34 @@ async function newFolder(parentRel){
   }catch(e){toast('作成に失敗しました',true)}
 }
 async function renameEntry(node){
+  const self=selfOf(node);
   const cur=node.dir?node.name:noExt(node.name);
   const name=prompt('新しい名前',cur);if(!name||name===cur)return;
-  const nn=name.trim().replace(/[\/\\]/g,'')+(node.dir?'':node.name.slice(noExt(node.name).length));
-  try{await moveEntry(node,parentOf(node.rel)+'/'+nn)}
-  catch(e){toast('変更に失敗しました',true)}
+  const nn=name.trim().replace(/[\/\\]/g,'');if(!nn)return;
+  try{
+    if(self){ // 親文書: フォルダと本体を両方改名
+      const parent=parentOf(node.rel);
+      const nfRel=parent+'/'+nn;
+      await FS.move(abs(node.rel),abs(nfRel));
+      remapMeta(node.rel,nfRel,true);
+      if(S.cur&&S.cur.rel.startsWith(node.rel+'/'))S.cur.rel=nfRel+S.cur.rel.slice(node.rel.length);
+      const ext=self.name.slice(noExt(self.name).length);
+      const oldSelf=nfRel+'/'+self.name,newSelf=nfRel+'/'+nn+ext;
+      await FS.move(abs(oldSelf),abs(newSelf));
+      remapMeta(oldSelf,newSelf,false);
+      if(S.cur&&S.cur.rel===oldSelf)S.cur.rel=newSelf;
+      if(S.cur){$('#fname').textContent=noExt(baseName(S.cur.rel));await refreshRev()}
+      saveMetaSoon();
+      await refreshTree();
+      toast('名前を変更しました');
+    }else{
+      const ext=node.dir?'':node.name.slice(noExt(node.name).length);
+      await moveEntry(node,parentOf(node.rel)+'/'+nn+ext);
+    }
+  }catch(e){toast('変更に失敗しました(同名がある可能性)',true);console.error(e)}
 }
 async function deleteEntry(node){
-  const label=node.dir?'フォルダ「'+node.name+'」と中身すべて':'文書「'+noExt(node.name)+'」';
+  const label=selfOf(node)?'文書「'+node.name+'」と、ぶら下がる子文書すべて':(node.dir?'フォルダ「'+node.name+'」と中身すべて':'文書「'+noExt(node.name)+'」');
   if(!confirm(label+'を削除しますか?\n(Dropboxのゴミ箱から30日以内なら復元できます)'))return;
   try{
     await FS.del(abs(node.rel));
@@ -1013,7 +1077,15 @@ $('#cpRun').onclick=async()=>{
   const sep={blank:'\n\n',rule:'\n\n---\n\n',none:'\n'}[$('#cpSep').value];
   const node=folderRel?findNode(folderRel):S.nodes;
   const files=[];
-  (function walk(n){for(const c of orderedChildren(n)){if(c.dir)walk(c);else if(/\.(md|txt)$/i.test(c.name))files.push(c.rel)}})(node);
+  (function walk(n){
+    const self=selfOf(n);
+    if(self&&/\.(md|txt)$/i.test(self.name))files.push(self.rel);
+    for(const c of orderedChildren(n)){
+      if(c===self)continue;
+      if(c.dir)walk(c);
+      else if(/\.(md|txt)$/i.test(c.name))files.push(c.rel);
+    }
+  })(node);
   if(!files.length){toast('対象の文書がありません',true);return}
   $('#mdlCompile').hidden=true;
   setStat('書き出し中…');
@@ -1068,4 +1140,3 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)saveNow()})
 </script>
 </body>
 </html>
-
