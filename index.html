@@ -71,6 +71,8 @@ details.guide .row{margin-top:8px;align-items:center}
 .proj-list{margin-top:18px;display:flex;flex-direction:column;gap:8px}
 .proj-item{display:flex;align-items:center;justify-content:space-between;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 16px;cursor:pointer;font-size:15px}
 .proj-item:hover{border-color:var(--accent)}
+.proj-item .pdel{font-size:12px;padding:2px 7px;margin-left:6px;color:var(--ink-soft)}
+.proj-item .pdel:hover{color:var(--danger)}
 .muted{color:var(--ink-soft);font-size:12px}
 
 /* ---- app layout ---- */
@@ -585,8 +587,20 @@ async function loadProjects(){
     if(!folders.length)box.innerHTML='<p class="muted">プロジェクトがありません。「＋ 新規」から作成してください。</p>';
     for(const name of folders){
       const d=document.createElement('div');d.className='proj-item';
-      d.innerHTML='<span>📁 '+esc(name)+'</span><span class="muted">開く →</span>';
+      d.innerHTML='<span>📁 '+esc(name)+'</span><span class="muted">開く → <button class="ghost pdel" title="プロジェクトを削除">✕</button></span>';
       d.onclick=()=>openProject(name);
+      d.querySelector('.pdel').onclick=async ev=>{
+        ev.stopPropagation();
+        const t=prompt('プロジェクト「'+name+'」を中身ごと削除します。\n確認のため、プロジェクト名を入力してください。\n(Dropboxのゴミ箱から30日以内なら復元できます)');
+        if(t===null)return;
+        if(t.trim()!==name){toast('名前が一致しません。削除を中止しました',true);return}
+        try{
+          await FS.del('/'+name);
+          LS.del('weave.recent.'+name);LS.del('weave.open.'+name);
+          toast('削除しました: '+name);
+          loadProjects();
+        }catch(e){toast('削除に失敗しました',true);console.error(e)}
+      };
       box.appendChild(d);
     }
   }catch(e){box.innerHTML='<p class="muted">読み込みに失敗しました。</p>';toast('一覧取得エラー',true);console.error(e)}
