@@ -61,6 +61,13 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-
 .center-card .row input{flex:1}
 .code{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:8px 10px;word-break:break-all;user-select:all;margin-top:6px}
 ol.steps{margin:10px 0 0 20px;font-size:13px;line-height:2;color:var(--ink-soft)}
+ol.steps a{color:var(--accent)}
+ol.steps code{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+ul.feats{margin:12px 0 4px 20px;font-size:13px;line-height:1.9;color:var(--ink-soft)}
+ul.feats li{margin-bottom:4px}
+details.guide{margin-top:10px;border:1px solid var(--line);border-radius:6px;padding:10px 14px;background:var(--panel)}
+details.guide summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--accent)}
+details.guide .row{margin-top:8px;align-items:center}
 .proj-list{margin-top:18px;display:flex;flex-direction:column;gap:8px}
 .proj-item{display:flex;align-items:center;justify-content:space-between;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 16px;cursor:pointer;font-size:15px}
 .proj-item:hover{border-color:var(--accent)}
@@ -126,6 +133,7 @@ ol.steps{margin:10px 0 0 20px;font-size:13px;line-height:2;color:var(--ink-soft)
 #pv blockquote{border-left:3px solid var(--line);padding-left:1em;color:var(--ink-soft);margin:0 0 1em}
 #pv a.wl{color:var(--accent);text-decoration:none;border-bottom:1px dashed var(--accent);cursor:pointer}
 #pv ruby rt{font-size:.5em;color:var(--ink-soft)}
+#pv img{max-width:100%;border-radius:4px;display:block;margin:1em auto}
 #empty{margin:auto;text-align:center;color:var(--ink-soft);font-size:13px;line-height:2.2}
 #empty .wordmark{font-size:22px;color:var(--line)}
 
@@ -184,20 +192,41 @@ body.focus #edwrap{padding-top:7vh}
   <div class="center-card">
     <div class="wordmark">WEAVE</div>
     <div class="tagline">NOVEL WRITING STUDIO</div>
-    <h2>初回設定</h2>
-    <p>Dropbox App Console で作成したアプリの <b>App Key</b> を入力してください。データはあなたの Dropbox(アプリ/WEAVE フォルダ)にのみ保存されます。</p>
+    <p style="margin-bottom:4px">WEAVEは、ブラウザだけで動く小説執筆エディタです。原稿・設定・ネタをフォルダで整理しながら、どのPC・スマホからも同じ環境で書けます。</p>
+    <ul class="feats">
+      <li>原稿はすべて<b>あなた自身のDropbox</b>(アプリ/WEAVE フォルダ)に保存。このサイトはデータを一切収集・保管しません</li>
+      <li>保存形式はプレーンテキスト(Markdown)。WEAVEが無くなっても原稿はただのテキストとして残ります</li>
+      <li>自動保存・版の履歴(Dropbox側で30日)・文字数目標・内部リンク・画像・書き出しに対応</li>
+      <li>無料・登録不要・広告なし(MITライセンスの個人製作ツールです)</li>
+    </ul>
+
+    <h2>使い始める(初回のみ、約5分)</h2>
+    <p>安全のため、WEAVEは「あなた専用のDropbox接続キー」を使います。以下の手順で発行してください。一度設定すればこの画面は二度と出ません。</p>
+    <details class="guide" open>
+      <summary>手順を表示</summary>
+      <ol class="steps">
+        <li><a href="https://www.dropbox.com/developers/apps" target="_blank" rel="noopener">Dropbox App Console</a> を開き「Create app」を押す(Dropboxアカウントが必要です)</li>
+        <li>「<b>Scoped access</b>」→「<b>App folder</b>」を選択(アプリ専用フォルダ以外にはアクセスできない、最も安全な設定です)</li>
+        <li>名前を自由に入力(例: WEAVE-yourname)→ Create app</li>
+        <li><b>Permissions</b> タブで <code>files.content.read</code> と <code>files.content.write</code> にチェック → 下部の Submit</li>
+        <li><b>Settings</b> タブの Redirect URIs に下のURLを貼って Add:</li>
+      </ol>
+      <div class="row">
+        <div class="code" id="redirectUri" style="flex:1;margin-top:0"></div>
+        <button id="btnCopyUri">コピー</button>
+      </div>
+      <ol class="steps" start="6">
+        <li>同じ Settings タブに表示されている <b>App key</b> をコピーして、下に貼り付け</li>
+      </ol>
+    </details>
+
+    <h2>接続</h2>
     <div class="row">
-      <input id="appkey" placeholder="App Key" autocomplete="off">
+      <input id="appkey" placeholder="App Key を貼り付け" autocomplete="off">
       <button class="primary" id="btnConnect">Dropboxと接続</button>
     </div>
-    <h2>アプリ登録がまだの場合</h2>
-    <ol class="steps">
-      <li>dropbox.com/developers → App Console → Create app</li>
-      <li>Scoped access → <b>App folder</b> → 名前「WEAVE」等</li>
-      <li>Permissions タブ: <b>files.content.read / files.content.write</b> にチェック → Submit</li>
-      <li>Settings タブ: Redirect URIs に下記を追加</li>
-    </ol>
-    <div class="code" id="redirectUri"></div>
+    <p class="muted" style="margin-top:10px">接続を押すとDropboxの承認画面に移動します。承認しても、このエディタがアクセスできるのはDropbox内の「アプリ/(あなたが付けた名前)」フォルダの中だけです。</p>
+    <p class="muted" style="margin-top:14px">produced by <a href="https://www.raito.studio/" target="_blank" rel="noopener" style="color:var(--accent)">Raito Studio</a> — CARVE / TALLY と同じ単一HTMLツール群のひとつ</p>
   </div>
 </div>
 
@@ -425,7 +454,14 @@ const FS={
     if(r.status===401&&retry){await refreshToken();return FS.read(path,false)}
     if(!r.ok){const e=new Error(await r.text());e.status=r.status;throw e}
     const meta=JSON.parse(r.headers.get('dropbox-api-result'));
-    return{text:await r.text(),rev:meta.rev};
+    return{text:await r.text(),rev:meta.rev,modified:meta.server_modified};
+  },
+  async readBlob(path,retry=true){
+    await ensureToken();
+    const r=await fetch('https://content.dropboxapi.com/2/files/download',{method:'POST',headers:{Authorization:'Bearer '+S.tokens.access_token,'Dropbox-API-Arg':headerSafe({path})}});
+    if(r.status===401&&retry){await refreshToken();return FS.readBlob(path,false)}
+    if(!r.ok)throw new Error(await r.text());
+    return URL.createObjectURL(await r.blob());
   },
   async write(path,text,mode,retry=true){ // mode: 'add' | 'overwrite' | {'.tag':'update',update:rev}
     await ensureToken();
@@ -545,7 +581,7 @@ function renderTree(){
         const st=(S.meta.docs[c.rel]||{}).status;
         inner+='<span class="ic">·</span>'+(st?'<span class="st st-'+st+'"></span>':'')+'<span class="nm">'+esc(noExt(c.name))+'</span>';
       }
-      inner+='<span class="acts">'+(c.dir?'<button data-a="nf" title="文書を追加">＋</button>':'')+'<button data-a="rn" title="名前を変更">✎</button><button data-a="del" title="削除">✕</button></span>';
+      inner+='<span class="acts">'+(c.dir?'<button data-a="nf" title="文書を追加">＋</button><button data-a="nd" title="サブフォルダを追加">⊞</button>':'')+'<button data-a="rn" title="名前を変更">✎</button><button data-a="del" title="削除">✕</button></span>';
       row.innerHTML=inner;
       if(S.cur&&S.cur.rel===c.rel)row.classList.add('active');
       row.onclick=ev=>{
@@ -553,7 +589,9 @@ function renderTree(){
         if(a==='rn'){renameEntry(c);return}
         if(a==='del'){deleteEntry(c);return}
         if(a==='nf'){newFile(c.rel);return}
+        if(a==='nd'){newFolder(c.rel);return}
         if(c.dir){open[c.rel]=!(open[c.rel]!==false);LS.set('weave.open.'+S.project,open);renderTree()}
+        else if(isImg(c.name))viewImage(c.rel);
         else openFile(c.rel);
       };
       bindDnD(row,c);
@@ -635,12 +673,20 @@ function remapMeta(oldRel,newRel,isDir){
 }
 
 /* ---- CRUD ---- */
+function uniqueName(parentRel,base,ext){
+  const parent=parentRel?findNode(parentRel):S.nodes;
+  const names=new Set(((parent&&parent.children)||[]).map(c=>c.name));
+  let n=base+ext,i=2;
+  while(names.has(n)){n=base+' '+i+ext;i++}
+  return n;
+}
 async function newFile(folderRel){
   if(folderRel==null){
     folderRel=S.cur?parentOf(S.cur.rel):'';
   }
   const name=prompt('文書名(拡張子不要)','無題');if(!name)return;
-  const rel=folderRel+'/'+name.trim().replace(/[\/\\]/g,'')+'.md';
+  const nm=uniqueName(folderRel,name.trim().replace(/[\/\\]/g,''),'.md');
+  const rel=folderRel+'/'+nm;
   try{
     await FS.write(abs(rel),'','add');
     S.meta.docs[rel]={status:'idea',summary:'',goal:0,chars:0};
@@ -651,13 +697,13 @@ async function newFile(folderRel){
     toast(e.status===409?'同名の文書があります':'作成に失敗しました',true);
   }
 }
-async function newFolder(){
-  const parent=S.cur?parentOf(S.cur.rel):'';
+async function newFolder(parentRel){
+  const parent=parentRel!=null?parentRel:(S.cur?parentOf(S.cur.rel):'');
   const name=prompt('フォルダ名');if(!name)return;
   try{
-    await FS.mkdir(abs(parent+'/'+name.trim().replace(/[\/\\]/g,'')));
+    await FS.mkdir(abs(parent+'/'+uniqueName(parent,name.trim().replace(/[\/\\]/g,''),'')));
     await refreshTree();
-  }catch(e){toast('作成に失敗しました(同名がある可能性)',true)}
+  }catch(e){toast('作成に失敗しました',true)}
 }
 async function renameEntry(node){
   const cur=node.dir?node.name:noExt(node.name);
@@ -698,7 +744,7 @@ async function openFile(rel,force){
       text=draft.content;S.dirty=true;
     }
     LS.del(draftKey);
-    S.cur={rel,rev:r.rev};
+    S.cur={rel,rev:r.rev,modified:r.modified};
     ed.value=text;
     if(S.dirty)setStat('未保存…');else setStat('保存済み','ok');
     $('#empty').hidden=true;$('#edwrap').hidden=false;
@@ -719,6 +765,66 @@ ed.addEventListener('input',()=>{
   S.saveTimer=setTimeout(saveNow,2500);
   updateCounts();
 });
+/* ---- images ---- */
+const isImg=n=>/\.(png|jpe?g|gif|webp)$/i.test(n);
+const imgCache={};
+async function insertImage(file){
+  if(!S.cur){toast('文書を開いてから貼り付けてください',true);return}
+  const pad2=x=>String(x).padStart(2,'0');
+  const d=new Date();
+  const ext=(file.type.split('/')[1]||'png').replace('jpeg','jpg');
+  const rel='/資料/画像/'+d.getFullYear()+pad2(d.getMonth()+1)+pad2(d.getDate())+'_'+pad2(d.getHours())+pad2(d.getMinutes())+pad2(d.getSeconds())+'.'+ext;
+  setStat('画像アップロード中…');
+  try{
+    try{await FS.mkdir(abs('/資料'))}catch(e){}
+    try{await FS.mkdir(abs('/資料/画像'))}catch(e){}
+    const buf=await file.arrayBuffer();
+    await FS.write(abs(rel),buf,'add');
+    const md='![画像]('+rel+')';
+    ed.setRangeText(md,ed.selectionStart,ed.selectionEnd,'end');
+    ed.dispatchEvent(new Event('input'));
+    refreshTree();
+    toast('画像を挿入しました(プレビューで表示されます)');
+  }catch(e){setStat('');toast('画像のアップロードに失敗しました',true)}
+}
+ed.addEventListener('paste',e=>{
+  const items=[...(e.clipboardData?e.clipboardData.items:[])].filter(i=>i.type.startsWith('image/'));
+  if(!items.length)return;
+  e.preventDefault();
+  insertImage(items[0].getAsFile());
+});
+ed.addEventListener('dragover',e=>{if([...e.dataTransfer.types].includes('Files'))e.preventDefault()});
+ed.addEventListener('drop',e=>{
+  const files=[...e.dataTransfer.files].filter(f=>f.type.startsWith('image/'));
+  if(!files.length)return;
+  e.preventDefault();
+  for(const f of files)insertImage(f);
+});
+async function viewImage(rel){
+  if(S.cur&&S.dirty)await saveNow();
+  S.cur=null;S.dirty=false;
+  $('#empty').hidden=true;$('#edwrap').hidden=false;
+  $('#fname').textContent=baseName(rel);
+  $('#fcnt').textContent='画像';
+  ed.hidden=true;
+  const pv=$('#pv');pv.hidden=false;
+  $('#btnPreview').classList.add('on');
+  pv.innerHTML='<p class="muted">読み込み中…</p>';
+  try{
+    const url=imgCache[rel]||(imgCache[rel]=await FS.readBlob(abs(rel)));
+    pv.innerHTML='<img src="'+url+'" alt="">';
+  }catch(e){pv.innerHTML='<p class="muted">画像を読み込めませんでした</p>'}
+  renderTree();
+}
+async function loadPvImages(){
+  for(const img of document.querySelectorAll('#pv img[data-rel]')){
+    const rel=img.dataset.rel;
+    try{
+      if(!imgCache[rel])imgCache[rel]=await FS.readBlob(abs(rel));
+      img.src=imgCache[rel];
+    }catch(e){img.alt='(画像が見つかりません: '+rel+')'}
+  }
+}
 async function saveNow(){
   if(!S.cur||!S.dirty)return;
   clearTimeout(S.saveTimer);
@@ -726,7 +832,7 @@ async function saveNow(){
   setStat('保存中…');
   try{
     const res=await FS.write(abs(rel),content,S.cur.rev?{'.tag':'update',update:S.cur.rev}:'add');
-    if(S.cur&&S.cur.rel===rel){S.cur.rev=res.rev;S.dirty=false;setStat('保存済み '+nowHM(),'ok')}
+    if(S.cur&&S.cur.rel===rel){S.cur.rev=res.rev;S.cur.modified=res.server_modified;S.dirty=false;setStat('保存済み '+nowHM(),'ok');updateCounts()}
     LS.del('weave.draft:'+S.project+':'+rel);
     const d=S.meta.docs[rel]||(S.meta.docs[rel]={status:'draft',summary:'',goal:0});
     d.chars=countChars(content);
@@ -749,10 +855,11 @@ $('#cfOverwrite').onclick=async()=>{
 };
 
 /* ---- counts / progress ---- */
+const fmtDate=iso=>{if(!iso)return'';const d=new Date(iso);return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
 function updateCounts(){
   if(!S.cur)return;
   const n=countChars(ed.value);
-  $('#fcnt').textContent=n.toLocaleString()+' 字';
+  $('#fcnt').textContent=n.toLocaleString()+' 字'+(S.cur.modified?' ・ 更新 '+fmtDate(S.cur.modified):'');
   const d=S.meta.docs[S.cur.rel]||{};
   const g=d.goal||0;
   const pct=g?Math.min(100,n/g*100):0;
@@ -815,6 +922,8 @@ $('#btnBL').onclick=async()=>{
 function mdRender(src){
   let s=esc(src);
   s=s.replace(/[|｜]([^《\n]{1,20})《([^》\n]+)》/g,'<ruby>$1<rt>$2</rt></ruby>');
+  s=s.replace(/!\[([^\]]*)\]\((https?:[^)\s]+)\)/g,'<img src="$2" alt="$1">');
+  s=s.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g,'<img data-rel="$2" alt="$1">');
   s=s.replace(/\[\[([^\]\n]+)\]\]/g,'<a class="wl" data-t="$1">$1</a>');
   s=s.replace(/^### (.+)$/gm,'<h3>$1</h3>');
   s=s.replace(/^## (.+)$/gm,'<h2>$1</h2>');
@@ -831,7 +940,7 @@ function mdRender(src){
 function setPreview(on){
   $('#pv').hidden=!on;ed.hidden=on;
   $('#btnPreview').classList.toggle('on',on);
-  if(on)$('#pv').innerHTML=mdRender(ed.value);
+  if(on){$('#pv').innerHTML=mdRender(ed.value);loadPvImages()}
 }
 $('#btnPreview').onclick=()=>setPreview($('#pv').hidden);
 $('#pv').addEventListener('click',async e=>{
@@ -922,11 +1031,15 @@ $('#cpRun').onclick=async()=>{
 
 /* ---- topbar / misc ---- */
 $('#btnConnect').onclick=startAuth;
+$('#btnCopyUri').onclick=async()=>{
+  try{await navigator.clipboard.writeText(redirectUri());toast('コピーしました')}
+  catch(e){toast('コピーできませんでした。手動で選択してください',true)}
+};
 $('#btnLogout').onclick=logout;
 $('#btnNewProj').onclick=createProject;
 $('#btnProjects').onclick=async()=>{await saveNow();loadProjects()};
 $('#btnNewFile').onclick=()=>newFile(null);
-$('#btnNewFolder').onclick=newFolder;
+$('#btnNewFolder').onclick=()=>newFolder(null);
 $('#btnFocus').onclick=()=>{document.body.classList.toggle('focus');$('#btnFocus').classList.toggle('on')};
 $('#btnMeta').onclick=()=>{const m=$('#metap');m.hidden=!m.hidden;$('#btnMeta').classList.toggle('on',!m.hidden)};
 $('#menuBtn').onclick=()=>document.body.classList.toggle('side-open');
@@ -955,4 +1068,3 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)saveNow()})
 </script>
 </body>
 </html>
-
