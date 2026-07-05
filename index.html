@@ -104,6 +104,8 @@ details.guide .row{margin-top:8px;align-items:center}
 .row-item .acts button{border:none;padding:0 4px;font-size:11px;color:var(--ink-soft)}
 .row-item .acts button:hover{color:var(--accent)}
 .row-item .st{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.row-item .fic{flex-shrink:0;font-size:12px;line-height:1}
+.row-item.dirrow>.nm{font-weight:600;color:var(--accent)}
 .st-idea{background:#B9B4A5}.st-draft{background:#C8A24B}.st-polish{background:#5B87B5}.st-done{background:#4C7A55}
 .kids{margin-left:14px;border-left:1px solid var(--line);padding-left:4px}
 .drag-over{outline:2px dashed var(--accent);outline-offset:-2px;border-radius:5px}
@@ -673,7 +675,8 @@ function renderTree(){
         inner='<span class="ic tg">'+(hasKids?(isOpen?'▾':'▸'):'·')+'</span>'+(st?'<span class="st st-'+st+'"></span>':'')+'<span class="nm">'+esc(c.name)+'</span>';
         inner+='<span class="acts"><button data-a="nf" title="子文書を追加">＋</button><button data-a="rn" title="名前を変更">✎</button><button data-a="del" title="削除">✕</button></span>';
       }else if(c.dir){ // 通常フォルダ
-        inner='<span class="ic tg">'+(isOpen?'▾':'▸')+'</span><span class="nm">'+esc(c.name)+'</span>';
+        row.classList.add('dirrow');
+        inner='<span class="ic tg">'+(isOpen?'▾':'▸')+'</span><span class="fic">'+(isOpen?'📂':'📁')+'</span><span class="nm">'+esc(c.name)+'</span>';
         inner+='<span class="acts"><button data-a="nf" title="文書を追加">＋</button><button data-a="nd" title="サブフォルダを追加">⊞</button><button data-a="rn" title="名前を変更">✎</button><button data-a="del" title="削除">✕</button></span>';
       }else{ // 文書
         const st=(S.meta.docs[c.rel]||{}).status;
